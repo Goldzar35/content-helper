@@ -1,9 +1,15 @@
+import json
+from pathlib import Path
+
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QStackedWidget,
 )
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QAbstractAnimation, QPoint
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QAbstractAnimation, QPoint, QParallelAnimationGroup
+from PyQt6.QtGui import QShortcut, QKeySequence
 from PyQt6.QtWidgets import QGraphicsOpacityEffect
+
+_PREFS_PATH = Path.home() / ".content-helper" / "prefs.json"
 
 from .database import Database
 from .stage_page import StagePage
@@ -58,7 +64,8 @@ class MainWindow(QMainWindow):
         self.resize(1200, 760)
 
         # Keep animation references alive (prevent Python GC)
-        self._fade_anim = None
+        self._fade_anim      = None
+        self._fling_nav_anim = None
         self._current_stage_idx = 0
 
         central = QWidget()
@@ -74,6 +81,10 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(GLOBAL_QSS)
         self._switch_stage(0)
         self._update_tab_counts()
+        self._restore_geometry()
+
+        self._new_shortcut = QShortcut(QKeySequence.StandardKey.New, self)
+        self._new_shortcut.activated.connect(self._new_video)
 
     # ── Top bar ───────────────────────────────────────────────────────────────
 
@@ -152,16 +163,22 @@ class MainWindow(QMainWindow):
         v = self.db.get_video(vid)
         if not v:
             return
+        idx = STAGE_KEYS.index(v.stage) if v.stage in STAGE_KEYS else 0
+        new_idx = min(idx + 1, len(STAGE_KEYS) - 1)
         self.db.advance_stage(vid)
         self._refresh_all()
+        self._fling_navigate(new_idx, forward=True)
         self._shake()
 
     def _on_retreat(self, vid: str):
         v = self.db.get_video(vid)
         if not v:
             return
+        idx = STAGE_KEYS.index(v.stage) if v.stage in STAGE_KEYS else 0
+        new_idx = max(idx - 1, 0)
         self.db.retreat_stage(vid)
         self._refresh_all()
+        self._fling_navigate(new_idx, forward=False)
         self._shake()
 
     # ── Navigation ────────────────────────────────────────────────────────────
@@ -190,6 +207,42 @@ class MainWindow(QMainWindow):
         anim.finished.connect(lambda: new.setGraphicsEffect(None))
         self._fade_anim = anim   # prevent GC
         anim.start(QAbstractAnimation.DeletionPolicy.KeepWhenStopped)
+
+    def _fling_navigate(self, idx: int, forward: bool):
+        """Switch to tab at idx, sliding the new page in from the fling direction."""
+        self._current_stage_idx = idx
+        for i, btn in enumerate(self._tab_buttons):
+            btn.setChecked(i == idx)
+
+        self._stack.setCurrentIndex(idx)
+        new = self._stack.currentWidget()
+
+        # Slide in from the direction the card was thrown
+        orig = new.pos()
+        offset = new.width() if forward else -new.width()
+        new.move(orig.x() + offset, orig.y())
+
+        effect = QGraphicsOpacityEffect(new)
+        new.setGraphicsEffect(effect)
+
+        pos_anim = QPropertyAnimation(new, b"pos")
+        pos_anim.setStartValue(new.pos())
+        pos_anim.setEndValue(orig)
+        pos_anim.setDuration(320)
+        pos_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        fade_anim = QPropertyAnimation(effect, b"opacity")
+        fade_anim.setStartValue(0.0)
+        fade_anim.setEndValue(1.0)
+        fade_anim.setDuration(320)
+        fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        group = QParallelAnimationGroup()
+        group.addAnimation(pos_anim)
+        group.addAnimation(fade_anim)
+        group.finished.connect(lambda: (new.setGraphicsEffect(None), new.move(orig)))
+        self._fling_nav_anim = group
+        group.start(QAbstractAnimation.DeletionPolicy.KeepWhenStopped)
 
     def _open_detail(self, video_id: str):
         self._detail.load(video_id)
@@ -247,6 +300,23 @@ class MainWindow(QMainWindow):
         dlg.exec()
         self._refresh_all()
 
+    def _save_geometry(self):
+        try:
+            _PREFS_PATH.write_text(json.dumps(
+                {"x": self.x(), "y": self.y(), "w": self.width(), "h": self.height()}
+            ))
+        except Exception:
+            pass
+
+    def _restore_geometry(self):
+        try:
+            if _PREFS_PATH.exists():
+                p = json.loads(_PREFS_PATH.read_text())
+                self.setGeometry(p["x"], p["y"], p["w"], p["h"])
+        except Exception:
+            pass
+
     def closeEvent(self, event):
+        self._save_geometry()
         self.db.close()
         super().closeEvent(event)

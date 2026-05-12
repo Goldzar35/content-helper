@@ -113,9 +113,6 @@ class VideoCard(QFrame):
         title_lbl.setMaximumHeight(44)
         layout.addWidget(title_lbl)
 
-        hint = QLabel("← swipe to move stage →")
-        hint.setStyleSheet(f"font-size:10px; color:{TEXT_MUTED}; background:transparent;")
-        layout.addWidget(hint)
 
     def _apply_style(self):
         cat_color = CATEGORY_COLORS.get(self.video.category, BORDER)

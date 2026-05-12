@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QLineEdit, QTextEdit, QCheckBox, QScrollArea, QComboBox,
     QFrame, QMessageBox,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 
 from .theme import (
     BG_ELEVATED, BG_MAIN, BORDER, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED,
@@ -116,6 +116,10 @@ class DetailView(QWidget):
         self.db    = db
         self.video = None
         self._field_widgets = {}
+        self._save_timer = QTimer(self)
+        self._save_timer.setSingleShot(True)
+        self._save_timer.setInterval(800)
+        self._save_timer.timeout.connect(self._auto_save)
         self._build_ui()
 
     def _build_ui(self):
@@ -209,6 +213,8 @@ class DetailView(QWidget):
             "  border-radius:0; padding:6px 0; background:transparent;"
             "}"
         )
+        if not readonly:
+            self._title_edit.textChanged.connect(self._save_timer.start)
         lay.addWidget(self._title_edit)
         lay.addSpacing(16)
 
@@ -219,21 +225,36 @@ class DetailView(QWidget):
         m.setContentsMargins(0, 0, 0, 0)
         m.setSpacing(20)
 
-        self._cat_combo   = self._make_labeled_combo(
+        self._cat_combo = self._make_labeled_combo(
             "Category",
             [(CATEGORY_DISPLAY[k], k) for k in CATEGORY_KEYS],
             CATEGORY_KEYS.index(v.category) if v.category in CATEGORY_KEYS else 0,
         )
-        self._stage_combo = self._make_labeled_combo(
-            "Stage",
-            [(STAGES[i], k) for i, k in enumerate(STAGE_KEYS)],
-            stage_idx,
-        )
         if readonly:
             self._cat_combo[1].setEnabled(False)
-            self._stage_combo[1].setEnabled(False)
+        else:
+            self._cat_combo[1].currentIndexChanged.connect(self._save_timer.start)
+
+        # Stage is read-only — changed via fling only
+        stage_wrap = QWidget()
+        stage_wrap.setStyleSheet("background:transparent;")
+        sw = QVBoxLayout(stage_wrap)
+        sw.setContentsMargins(0, 0, 0, 0)
+        sw.setSpacing(4)
+        stage_cap = QLabel("Stage")
+        stage_cap.setStyleSheet(
+            f"font-size:10px; font-weight:600; color:{TEXT_MUTED};"
+            "text-transform:uppercase; letter-spacing:0.8px; background:transparent;"
+        )
+        stage_badge = QLabel(STAGES[stage_idx])
+        stage_badge.setStyleSheet(
+            f"font-size:13px; font-weight:600; color:{stage_col}; background:transparent;"
+        )
+        sw.addWidget(stage_cap)
+        sw.addWidget(stage_badge)
+
         m.addWidget(self._cat_combo[0])
-        m.addWidget(self._stage_combo[0])
+        m.addWidget(stage_wrap)
         m.addStretch()
         lay.addWidget(meta)
         lay.addSpacing(32)
@@ -320,6 +341,8 @@ class DetailView(QWidget):
             cb.setStyleSheet(
                 "QCheckBox { font-size:13px; color:#d0d0d0; background:transparent; }"
             )
+            if not readonly:
+                cb.stateChanged.connect(self._save_timer.start)
             box.add(cb)
             self._field_widgets[field.id] = cb
         else:
@@ -341,6 +364,8 @@ class DetailView(QWidget):
                     "QTextEdit { background:transparent; border:none;"
                     "  border-radius:0; padding:2px 0; font-size:13px; color:#e0e0e0; }"
                 )
+                if not readonly:
+                    w.textChanged.connect(self._save_timer.start)
             else:
                 w = QLineEdit(val)
                 w.setPlaceholderText(f"Add {field.label.lower()}…")
@@ -349,6 +374,8 @@ class DetailView(QWidget):
                     "QLineEdit { background:transparent; border:none;"
                     "  border-radius:0; padding:2px 0; font-size:13px; color:#e0e0e0; }"
                 )
+                if not readonly:
+                    w.textChanged.connect(self._save_timer.start)
             box.add(w)
             self._field_widgets[field.id] = w
 
@@ -357,13 +384,10 @@ class DetailView(QWidget):
     # ── Save / Delete ─────────────────────────────────────────────────────────
 
     def _collect_values(self):
-        if not self.video:
-            return
-        if self.video.stage == "completed":
+        if not self.video or self.video.stage == "completed":
             return
         self.video.title    = self._title_edit.text().strip() or self.video.title
         self.video.category = self._cat_combo[1].currentData()
-        self.video.stage    = self._stage_combo[1].currentData()
         for fid, widget in self._field_widgets.items():
             if isinstance(widget, QCheckBox):
                 self.video.checklist_values[fid] = widget.isChecked()
@@ -372,12 +396,22 @@ class DetailView(QWidget):
             elif isinstance(widget, QLineEdit):
                 self.video.checklist_values[fid] = widget.text()
 
-    def _save_and_back(self):
+    def _auto_save(self):
         self._collect_values()
         if self.video:
             self.db.update_video(self.video)
+
+    def _save_and_back(self):
+        self._save_timer.stop()
+        self._auto_save()
         self.video_saved.emit()
         self.back_requested.emit()
+
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key.Key_Escape:
+            self._save_and_back()
+        else:
+            super().keyPressEvent(e)
 
     def _confirm_delete(self):
         if not self.video:

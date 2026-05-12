@@ -44,7 +44,10 @@ class StagePage(QWidget):
     def refresh(self):
         self._clear_grid()
         videos = self.db.get_videos_by_stage(self.stage_key)
-        fields = self.db.get_fields_for_stage(self.stage_key)
+        if self.stage_key in ("review", "completed"):
+            fields = self.db.get_fields()
+        else:
+            fields = self.db.get_fields_for_stage(self.stage_key)
 
         if not videos:
             self._show_empty()

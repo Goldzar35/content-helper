@@ -35,14 +35,15 @@ class FieldRow(QWidget):
         lay.addWidget(self._type)
 
         from .theme import STAGE_KEYS, STAGES
+        _pipeline = STAGE_KEYS[:5]
+        _pipeline_names = STAGES[:5]
         self._stage = QComboBox()
-        self._stage.addItem("— all —", None)
-        for key, name in zip(STAGE_KEYS, STAGES):
+        for key, name in zip(_pipeline, _pipeline_names):
             self._stage.addItem(name, key)
-        # Set current
-        if field.stage:
-            idx = STAGE_KEYS.index(field.stage) + 1 if field.stage in STAGE_KEYS else 0
-            self._stage.setCurrentIndex(idx)
+        if field.stage and field.stage in _pipeline:
+            self._stage.setCurrentIndex(_pipeline.index(field.stage))
+        else:
+            self._stage.setCurrentIndex(0)
         self._stage.setFixedHeight(30)
         self._stage.setFixedWidth(90)
         lay.addWidget(self._stage)
@@ -143,8 +144,7 @@ class SettingsDialog(QDialog):
 
         from .theme import STAGE_KEYS, STAGES
         self._new_stage = QComboBox()
-        self._new_stage.addItem("— all —", None)
-        for key, name in zip(STAGE_KEYS, STAGES):
+        for key, name in zip(STAGE_KEYS[:5], STAGES[:5]):
             self._new_stage.addItem(name, key)
         self._new_stage.setFixedHeight(30)
         self._new_stage.setFixedWidth(90)
