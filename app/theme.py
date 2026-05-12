@@ -32,9 +32,9 @@ STAGE_COLORS = {
 }
 
 CATEGORY_COLORS = {
-    "armwrestling": "#f97316",
-    "gamedev":      "#a855f7",
-    "misc":         "#22c55e",
+    "armwrestling": "#f43f5e",   # rose — intense, sport
+    "gamedev":      "#60a5fa",   # sky blue — techy, creative
+    "misc":         "#fbbf24",   # amber — warm, versatile
 }
 
 FONT_FAMILY = "-apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial"

@@ -6,21 +6,48 @@ from pathlib import Path
 
 from .models import Video, ChecklistField
 
-DB_DIR = Path.home() / ".content-helper"
+DB_DIR  = Path.home() / ".content-helper"
 DB_PATH = DB_DIR / "data.db"
 
+# (id, label, field_type, required, order, stage)
 DEFAULT_FIELDS = [
-    ("hook",                "Hook / Opening Line",          "text",     False, 0),
-    ("thumbnail",           "Thumbnail Concept",            "text",     False, 1),
-    ("description",         "Description",                  "textarea", False, 2),
-    ("tags",                "Tags",                         "text",     False, 3),
-    ("duration",            "Estimated Length",             "text",     False, 4),
-    ("references",          "Reference Videos / Links",     "textarea", False, 5),
-    ("equipment",           "Equipment / Location Notes",   "text",     False, 6),
-    ("transitions",         "Transitions Needed",           "textarea", False, 7),
-    ("recording_reminders", "Recording Reminders",          "textarea", False, 8),
-    ("script",              "Script / Outline",             "textarea", False, 9),
+    # Ideas ── brainstorming
+    ("concept",         "Concept / Idea",            "textarea", False,  0, "ideas"),
+    ("target_audience", "Target Audience",            "text",     False,  1, "ideas"),
+    ("video_angle",     "Unique Angle / Take",        "text",     False,  2, "ideas"),
+    ("inspo",           "Inspiration / References",   "textarea", False,  3, "ideas"),
+
+    # Planning ── pre-production
+    ("hook",            "Hook / Opening Line",        "text",     False, 10, "planning"),
+    ("script",          "Script / Outline",           "textarea", False, 11, "planning"),
+    ("duration",        "Estimated Length",           "text",     False, 12, "planning"),
+    ("thumbnail",       "Thumbnail Concept",          "text",     False, 13, "planning"),
+    ("description",     "Description Draft",          "textarea", False, 14, "planning"),
+    ("tags",            "Tags",                       "text",     False, 15, "planning"),
+
+    # Filming ── production
+    ("shot_list",       "Shot List",                  "textarea", False, 20, "filming"),
+    ("equipment",       "Equipment / Setup",          "text",     False, 21, "filming"),
+    ("location",        "Location / Setup Notes",     "text",     False, 22, "filming"),
+    ("rec_reminders",   "Recording Reminders",        "textarea", False, 23, "filming"),
+    ("transitions",     "Transitions to Capture",     "textarea", False, 24, "filming"),
+
+    # Editing ── post-production
+    ("edit_notes",      "Edit Notes",                 "textarea", False, 30, "editing"),
+    ("music",           "Music / Audio",              "text",     False, 31, "editing"),
+    ("graphics",        "Graphics / Text Overlays",   "textarea", False, 32, "editing"),
+    ("color_grade",     "Color Grade / Look",         "text",     False, 33, "editing"),
+
+    # Posting ── publishing
+    ("final_title",     "Final Title",                "text",     False, 40, "posting"),
+    ("final_desc",      "Final Description",          "textarea", False, 41, "posting"),
+    ("final_tags",      "Final Tags",                 "text",     False, 42, "posting"),
+    ("thumbnail_done",  "Thumbnail Finalized",        "checkbox", False, 43, "posting"),
+    ("schedule_date",   "Schedule / Publish Date",    "text",     False, 44, "posting"),
+    ("cta",             "CTA / End Screen",           "text",     False, 45, "posting"),
 ]
+
+_DEFAULT_IDS = {row[0] for row in DEFAULT_FIELDS}
 
 
 class Database:
@@ -50,28 +77,48 @@ class Database:
                 field_type TEXT NOT NULL DEFAULT 'text',
                 required INTEGER DEFAULT 0,
                 order_idx INTEGER DEFAULT 0,
-                active INTEGER DEFAULT 1
+                active INTEGER DEFAULT 1,
+                stage TEXT DEFAULT NULL
             )
         """)
-        c.execute("SELECT COUNT(*) FROM checklist_fields")
-        if c.fetchone()[0] == 0:
-            for fid, label, ftype, req, order in DEFAULT_FIELDS:
-                c.execute(
-                    "INSERT INTO checklist_fields VALUES (?,?,?,?,?,1)",
-                    (fid, label, ftype, int(req), order),
-                )
+
+        # Migration: add stage column to older DBs — wipe all fields and reseed
+        c.execute("PRAGMA table_info(checklist_fields)")
+        cols = {row[1] for row in c.fetchall()}
+        if "stage" not in cols:
+            c.execute("ALTER TABLE checklist_fields ADD COLUMN stage TEXT DEFAULT NULL")
+            c.execute("DELETE FROM checklist_fields")   # reseed with stage groupings
+            self.conn.commit()
+
+        # Seed defaults (INSERT OR IGNORE so user-added fields survive)
+        for fid, label, ftype, req, order, stage in DEFAULT_FIELDS:
+            c.execute(
+                "INSERT OR IGNORE INTO checklist_fields VALUES (?,?,?,?,?,1,?)",
+                (fid, label, ftype, int(req), order, stage),
+            )
         self.conn.commit()
 
     # ── Fields ────────────────────────────────────────────────────────────────
 
+    def get_fields_for_stage(self, stage: str) -> list:
+        """Active fields belonging to a specific stage."""
+        c = self.conn.cursor()
+        c.execute(
+            "SELECT * FROM checklist_fields WHERE stage=? AND active=1 ORDER BY order_idx",
+            (stage,),
+        )
+        return [self._row_to_field(r) for r in c.fetchall()]
+
     def get_fields(self) -> list:
+        """All active fields (for progress calculation)."""
         c = self.conn.cursor()
         c.execute("SELECT * FROM checklist_fields WHERE active=1 ORDER BY order_idx")
         return [self._row_to_field(r) for r in c.fetchall()]
 
     def get_all_fields(self) -> list:
+        """All fields including inactive (for settings)."""
         c = self.conn.cursor()
-        c.execute("SELECT * FROM checklist_fields ORDER BY order_idx")
+        c.execute("SELECT * FROM checklist_fields ORDER BY stage, order_idx")
         return [self._row_to_field(r) for r in c.fetchall()]
 
     def save_fields(self, fields: list):
@@ -79,21 +126,20 @@ class Database:
         c.execute("DELETE FROM checklist_fields")
         for f in fields:
             c.execute(
-                "INSERT INTO checklist_fields VALUES (?,?,?,?,?,?)",
-                (f.id, f.label, f.field_type, int(f.required), f.order, int(f.active)),
+                "INSERT INTO checklist_fields VALUES (?,?,?,?,?,?,?)",
+                (f.id, f.label, f.field_type, int(f.required), f.order, int(f.active), f.stage),
             )
         self.conn.commit()
 
-    def add_field(self, label: str, field_type: str) -> ChecklistField:
+    def add_field(self, label: str, field_type: str, stage: str = None) -> ChecklistField:
         c = self.conn.cursor()
         c.execute("SELECT MAX(order_idx) FROM checklist_fields")
-        row = c.fetchone()
-        max_order = (row[0] or 0) + 1
+        max_order = (c.fetchone()[0] or 0) + 1
         fid = str(uuid.uuid4())[:8]
-        f = ChecklistField(fid, label, field_type, False, max_order, True)
+        f = ChecklistField(fid, label, field_type, False, max_order, True, stage)
         c.execute(
-            "INSERT INTO checklist_fields VALUES (?,?,?,?,?,1)",
-            (f.id, f.label, f.field_type, 0, f.order),
+            "INSERT INTO checklist_fields VALUES (?,?,?,?,?,1,?)",
+            (f.id, f.label, f.field_type, 0, f.order, f.stage),
         )
         self.conn.commit()
         return f
@@ -102,9 +148,7 @@ class Database:
 
     def get_videos_by_stage(self, stage: str) -> list:
         c = self.conn.cursor()
-        c.execute(
-            "SELECT * FROM videos WHERE stage=? ORDER BY updated_at DESC", (stage,)
-        )
+        c.execute("SELECT * FROM videos WHERE stage=? ORDER BY updated_at DESC", (stage,))
         return [self._row_to_video(r) for r in c.fetchall()]
 
     def get_video(self, vid: str):
@@ -171,23 +215,19 @@ class Database:
 
     def _row_to_video(self, row) -> Video:
         return Video(
-            id=row["id"],
-            title=row["title"],
-            category=row["category"],
-            stage=row["stage"],
+            id=row["id"], title=row["title"],
+            category=row["category"], stage=row["stage"],
             checklist_values=json.loads(row["checklist_values"]),
-            created_at=row["created_at"],
-            updated_at=row["updated_at"],
+            created_at=row["created_at"], updated_at=row["updated_at"],
         )
 
     def _row_to_field(self, row) -> ChecklistField:
+        keys = row.keys()
         return ChecklistField(
-            id=row["id"],
-            label=row["label"],
-            field_type=row["field_type"],
-            required=bool(row["required"]),
-            order=row["order_idx"],
-            active=bool(row["active"]),
+            id=row["id"], label=row["label"],
+            field_type=row["field_type"], required=bool(row["required"]),
+            order=row["order_idx"], active=bool(row["active"]),
+            stage=row["stage"] if "stage" in keys else None,
         )
 
     def close(self):

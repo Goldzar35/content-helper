@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QStackedWidget,
 )
-from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QAbstractAnimation, QTimer
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QAbstractAnimation, QPoint
 from PyQt6.QtWidgets import QGraphicsOpacityEffect
 
 from .database import Database
@@ -22,25 +22,13 @@ class TabButton(QPushButton):
     def __init__(self, label: str, color: str, parent=None):
         super().__init__(label, parent)
         self.color = color
-        self._pulsing = False
         self.setCheckable(True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self._apply(False)
 
     def setChecked(self, checked: bool):
         super().setChecked(checked)
-        if not self._pulsing:
-            self._apply(checked)
-
-    def pulse(self):
-        """Flash the tab to signal a card just arrived here."""
-        self._pulsing = True
-        self._apply_pulse()
-        QTimer.singleShot(550, self._end_pulse)
-
-    def _end_pulse(self):
-        self._pulsing = False
-        self._apply(self.isChecked())
+        self._apply(checked)
 
     def _apply(self, active: bool):
         border_color = self.color if active else "transparent"
@@ -58,20 +46,6 @@ class TabButton(QPushButton):
             f"  height:48px; min-width:90px;"
             f"}}"
             f"QPushButton:hover {{ color:{TEXT_PRIMARY}; }}"
-        )
-
-    def _apply_pulse(self):
-        self.setStyleSheet(
-            f"QPushButton {{"
-            f"  background:{self.color}18;"
-            f"  border-style:solid;"
-            f"  border-width:0 0 2px 0;"
-            f"  border-color:transparent transparent {self.color} transparent;"
-            f"  color:{self.color};"
-            f"  font-size:13px; font-weight:700;"
-            f"  padding:0px 18px;"
-            f"  height:48px; min-width:90px;"
-            f"}}"
         )
 
 
@@ -177,24 +151,17 @@ class MainWindow(QMainWindow):
         v = self.db.get_video(vid)
         if not v:
             return
-        src_idx = STAGE_KEYS.index(v.stage)
         self.db.advance_stage(vid)
-        v2 = self.db.get_video(vid)
         self._refresh_all()
-        if v2 and v2.stage != v.stage:
-            dst_idx = STAGE_KEYS.index(v2.stage)
-            self._pulse_tab(dst_idx)
+        self._shake()
 
     def _on_retreat(self, vid: str):
         v = self.db.get_video(vid)
         if not v:
             return
         self.db.retreat_stage(vid)
-        v2 = self.db.get_video(vid)
         self._refresh_all()
-        if v2 and v2.stage != v.stage:
-            dst_idx = STAGE_KEYS.index(v2.stage)
-            self._pulse_tab(dst_idx)
+        self._shake()
 
     # ── Navigation ────────────────────────────────────────────────────────────
 
@@ -230,11 +197,25 @@ class MainWindow(QMainWindow):
     def _close_detail(self):
         self._switch_stage(self._current_stage_idx)
 
-    # ── Pulse ─────────────────────────────────────────────────────────────────
+    # ── Shake ─────────────────────────────────────────────────────────────────
 
-    def _pulse_tab(self, idx: int):
-        if 0 <= idx < len(self._tab_buttons):
-            self._tab_buttons[idx].pulse()
+    def _shake(self):
+        """Window shake — 'breaking through a wall' feel when a card is flung."""
+        orig = self.pos()
+        anim = QPropertyAnimation(self, b"pos")
+        anim.setDuration(380)
+        anim.setKeyValueAt(0.00, orig)
+        anim.setKeyValueAt(0.08, orig + QPoint(-11, 0))
+        anim.setKeyValueAt(0.18, orig + QPoint( 11, 0))
+        anim.setKeyValueAt(0.28, orig + QPoint( -8, 0))
+        anim.setKeyValueAt(0.40, orig + QPoint(  8, 0))
+        anim.setKeyValueAt(0.52, orig + QPoint( -5, 0))
+        anim.setKeyValueAt(0.65, orig + QPoint(  5, 0))
+        anim.setKeyValueAt(0.78, orig + QPoint( -2, 0))
+        anim.setKeyValueAt(0.90, orig + QPoint(  2, 0))
+        anim.setKeyValueAt(1.00, orig)
+        self._shake_anim = anim   # prevent GC
+        anim.start(QAbstractAnimation.DeletionPolicy.KeepWhenStopped)
 
     # ── Refresh ───────────────────────────────────────────────────────────────
 

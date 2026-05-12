@@ -20,28 +20,42 @@ class FieldRow(QWidget):
         self.setStyleSheet("background:transparent;")
         lay = QHBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(10)
+        lay.setSpacing(8)
 
         self._label = QLineEdit(field.label)
-        self._label.setFixedHeight(32)
+        self._label.setFixedHeight(30)
         lay.addWidget(self._label, stretch=3)
 
         self._type = QComboBox()
         for t in ("text", "textarea", "checkbox"):
             self._type.addItem(t)
         self._type.setCurrentText(field.field_type)
-        self._type.setFixedHeight(32)
-        self._type.setFixedWidth(100)
+        self._type.setFixedHeight(30)
+        self._type.setFixedWidth(90)
         lay.addWidget(self._type)
 
-        self._active = QCheckBox("Active")
+        from .theme import STAGE_KEYS, STAGES
+        self._stage = QComboBox()
+        self._stage.addItem("— all —", None)
+        for key, name in zip(STAGE_KEYS, STAGES):
+            self._stage.addItem(name, key)
+        # Set current
+        if field.stage:
+            idx = STAGE_KEYS.index(field.stage) + 1 if field.stage in STAGE_KEYS else 0
+            self._stage.setCurrentIndex(idx)
+        self._stage.setFixedHeight(30)
+        self._stage.setFixedWidth(90)
+        lay.addWidget(self._stage)
+
+        self._active = QCheckBox()
         self._active.setChecked(field.active)
+        self._active.setToolTip("Active")
         lay.addWidget(self._active)
 
         del_btn = QPushButton("✕")
-        del_btn.setFixedSize(28, 28)
+        del_btn.setFixedSize(26, 26)
         del_btn.setStyleSheet(
-            "background:transparent; border:none; color:#666; font-size:14px;"
+            "background:transparent; border:none; color:#555; font-size:13px;"
         )
         del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         del_btn.clicked.connect(lambda: on_delete(self))
@@ -55,6 +69,7 @@ class FieldRow(QWidget):
             required=self.field.required,
             order=order,
             active=self._active.isChecked(),
+            stage=self._stage.currentData(),
         )
 
 
@@ -118,24 +133,33 @@ class SettingsDialog(QDialog):
         add_row = QHBoxLayout()
         self._new_label = QLineEdit()
         self._new_label.setPlaceholderText("New field label…")
-        self._new_label.setFixedHeight(32)
+        self._new_label.setFixedHeight(30)
 
         self._new_type = QComboBox()
         for t in ("text", "textarea", "checkbox"):
             self._new_type.addItem(t)
-        self._new_type.setFixedHeight(32)
-        self._new_type.setFixedWidth(100)
+        self._new_type.setFixedHeight(30)
+        self._new_type.setFixedWidth(90)
+
+        from .theme import STAGE_KEYS, STAGES
+        self._new_stage = QComboBox()
+        self._new_stage.addItem("— all —", None)
+        for key, name in zip(STAGE_KEYS, STAGES):
+            self._new_stage.addItem(name, key)
+        self._new_stage.setFixedHeight(30)
+        self._new_stage.setFixedWidth(90)
 
         add_btn = QPushButton("+ Add Field")
         add_btn.setStyleSheet(
             f"background:{ACCENT}22; color:{ACCENT}; border:1px solid {ACCENT}44; "
-            "border-radius:6px; padding:6px 14px;"
+            "border-radius:6px; padding:5px 14px;"
         )
         add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         add_btn.clicked.connect(self._add_field)
 
         add_row.addWidget(self._new_label, stretch=1)
         add_row.addWidget(self._new_type)
+        add_row.addWidget(self._new_stage)
         add_row.addWidget(add_btn)
         root.addLayout(add_row)
 
@@ -177,14 +201,14 @@ class SettingsDialog(QDialog):
         label = self._new_label.text().strip()
         if not label:
             return
-        ftype = self._new_type.currentText()
         field = ChecklistField(
             id=str(uuid.uuid4())[:8],
             label=label,
-            field_type=ftype,
+            field_type=self._new_type.currentText(),
             required=False,
             order=len(self._rows),
             active=True,
+            stage=self._new_stage.currentData(),
         )
         self._append_row(field)
         self._new_label.clear()
