@@ -42,6 +42,7 @@ class NewVideoDialog(QDialog):
 
         self._title = QLineEdit()
         self._title.setPlaceholderText("Give your video a working title…")
+        self._title.setFixedHeight(38)
         lay.addWidget(self._title)
 
         # Category picker
