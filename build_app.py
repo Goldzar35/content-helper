@@ -64,4 +64,7 @@ if __name__ == "__main__":
     ], check=True)
 
     print("\nDone! App is at: dist/Content Helper.app")
-    print("Drag it to your Applications folder or Desktop.")
+    print("To install, run:")
+    print("  ditto 'dist/Content Helper.app' ~/Desktop/'Content Helper.app'")
+    print("  # or drag dist/Content Helper.app to /Applications")
+    print("NOTE: Use 'ditto' not 'cp -r' — cp strips code signatures on macOS.")
