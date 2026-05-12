@@ -12,3 +12,8 @@ venv/
 node_modules/
 .idea/
 .vscode/
+
+icon.iconset/
+icon_1024.png
+icon.icns
+*.spec

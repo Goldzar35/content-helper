@@ -24,15 +24,40 @@ Videos move through a 5-stage production pipeline — Ideas → Planning → Fil
 - **Game Dev** — devlog / game development content
 - **Misc** — everything else
 
-## Running
+## Installation
+
+### Option A — Download the app (easiest)
+
+1. Go to the [Releases](../../releases) page and download `Content.Helper.app.zip`
+2. Unzip and drag **Content Helper.app** to your Applications folder
+3. First launch: **right-click → Open** (macOS will warn about an unverified developer — this is expected for unsigned apps. Click Open to proceed. You only need to do this once.)
+
+### Option B — Run from source
+
+Requires Python 3.10+.
 
 ```bash
-cd ~/content-helper
+# Clone the repo
+git clone https://github.com/Goldzar35/content-helper.git
+cd content-helper
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Run
 python3 main.py
 ```
 
-Requires Python 3.10+ and PyQt6. Data is stored at `~/.content-helper/data.db` (SQLite).
+Data is stored at `~/.content-helper/data.db` (SQLite) — your videos persist between launches.
+
+### Building the .app yourself
+
+```bash
+pip install pyinstaller pillow
+python3 build_app.py
+```
+
+The app will be built at `dist/Content Helper.app`.
 
 ## Customizing checklist fields
 
