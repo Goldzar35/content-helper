@@ -73,12 +73,7 @@ class StagePage(QWidget):
                 w.deleteLater()
 
     def _show_empty(self):
-        lbl = QLabel("No videos here yet.\nClick  +  to add one.")
-        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        lbl.setStyleSheet(
-            f"color:{TEXT_MUTED}; font-size:14px; background:transparent;"
-        )
-        self._grid.addWidget(lbl, 0, 0, 1, self._cols)
+        pass
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

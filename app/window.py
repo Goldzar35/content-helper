@@ -78,7 +78,6 @@ class MainWindow(QMainWindow):
         root.addWidget(self._build_topbar())
         root.addWidget(self._build_stack())
 
-        self.setStyleSheet(GLOBAL_QSS)
         self._switch_stage(0)
         self._update_tab_counts()
         self._restore_geometry()
