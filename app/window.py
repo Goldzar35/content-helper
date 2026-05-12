@@ -122,10 +122,10 @@ class MainWindow(QMainWindow):
         settings_btn.clicked.connect(self._open_settings)
         lay.addWidget(settings_btn)
 
-        new_btn = QPushButton("  +  New Video")
+        new_btn = QPushButton("+ New Video")
         new_btn.setStyleSheet(
             f"background:{ACCENT}; color:{ACCENT_TEXT}; border:none; border-radius:7px;"
-            "font-size:13px; font-weight:700; padding:7px 16px; margin-left:8px;"
+            "font-size:13px; font-weight:700; padding:7px 18px; margin-left:8px;"
         )
         new_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         new_btn.clicked.connect(self._new_video)
