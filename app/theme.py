@@ -144,8 +144,15 @@ QComboBox:hover {{
     border-color: {BORDER_FOCUS};
 }}
 QComboBox::drop-down {{
-    border: none;
-    width: 24px;
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 20px;
+    border-left: 1px solid {BORDER};
+    border-radius: 0 6px 6px 0;
+}}
+QComboBox::down-arrow {{
+    width: 10px;
+    height: 10px;
 }}
 QComboBox QAbstractItemView {{
     background-color: {BG_ELEVATED};

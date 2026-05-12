@@ -14,7 +14,7 @@ class NewVideoDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("New Video")
-        self.setFixedSize(400, 220)
+        self.setFixedSize(420, 260)
         self.setModal(True)
         self.setStyleSheet(
             f"QDialog {{ background:{BG_ELEVATED}; border:1px solid {BORDER}; border-radius:12px; }}"
@@ -60,6 +60,10 @@ class NewVideoDialog(QDialog):
         # Buttons
         btn_row = QHBoxLayout()
         cancel = QPushButton("Cancel")
+        cancel.setStyleSheet(
+            "background:#2a2a2a; color:#aaaaaa; border:1px solid #333;"
+            "border-radius:6px; padding:8px 20px;"
+        )
         cancel.clicked.connect(self.reject)
 
         create = QPushButton("Create →")
