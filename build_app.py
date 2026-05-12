@@ -50,8 +50,18 @@ if __name__ == "__main__":
         "--windowed",
         "--name", "Content Helper",
         "--icon", "icon.icns",
+        "--osx-bundle-identifier", "com.goldzar.content-helper",
+        "--collect-all", "PyQt6",
         "--noconfirm",
         "main.py",
     ], check=True)
+
+    # Ad-hoc re-sign to fix PAC signature crash on macOS 15+
+    print("Signing bundle...")
+    subprocess.run([
+        "codesign", "--force", "--deep", "--sign", "-",
+        "dist/Content Helper.app",
+    ], check=True)
+
     print("\nDone! App is at: dist/Content Helper.app")
     print("Drag it to your Applications folder or Desktop.")
