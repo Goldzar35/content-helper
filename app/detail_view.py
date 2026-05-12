@@ -70,7 +70,7 @@ class CollapsibleSection(QWidget):
         # Line separator
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
-        line.setStyleSheet(f"background:{color}30; max-height:1px; border:none;")
+        line.setStyleSheet(f"background:{color}; max-height:1px; border:none;")
 
         self._toggle_btn = QPushButton("▾" if expanded else "▸")
         self._toggle_btn.setFixedSize(22, 22)
@@ -193,9 +193,14 @@ class DetailView(QWidget):
 
         self._breadcrumb.setText(f"{STAGES[stage_idx]}  ›  {v.title}")
 
+        is_review    = v.stage == "review"
+        is_completed = v.stage == "completed"
+        readonly     = is_completed
+
         # ── Title ─────────────────────────────────────────────────────────
         self._title_edit = QLineEdit(v.title)
         self._title_edit.setPlaceholderText("Video title…")
+        self._title_edit.setReadOnly(readonly)
         self._title_edit.setStyleSheet(
             "QLineEdit {"
             "  font-size:22px; font-weight:700; border:none;"
@@ -224,11 +229,30 @@ class DetailView(QWidget):
             [(STAGES[i], k) for i, k in enumerate(STAGE_KEYS)],
             stage_idx,
         )
+        if readonly:
+            self._cat_combo[1].setEnabled(False)
+            self._stage_combo[1].setEnabled(False)
         m.addWidget(self._cat_combo[0])
         m.addWidget(self._stage_combo[0])
         m.addStretch()
         lay.addWidget(meta)
         lay.addSpacing(32)
+
+        # ── Review / Completed: all pipeline stages expanded ──────────────
+        if is_review or is_completed:
+            pipeline_keys = ["ideas", "planning", "filming", "editing", "posting"]
+            pipeline_stages = STAGES[:5]
+            for i, key in enumerate(pipeline_keys):
+                fields = self.db.get_fields_for_stage(key)
+                if not fields:
+                    continue
+                sec = CollapsibleSection(pipeline_stages[i], STAGE_COLORS.get(key, "#555"), expanded=True)
+                for field in fields:
+                    self._add_field_to_section(sec, field, readonly=readonly)
+                lay.addWidget(sec)
+                lay.addSpacing(8)
+            lay.addStretch()
+            return
 
         # ── Current stage fields ──────────────────────────────────────────
         current_fields = self.db.get_fields_for_stage(v.stage)
@@ -286,13 +310,13 @@ class DetailView(QWidget):
         wl.addWidget(combo)
         return wrap, combo
 
-    def _add_field_to_section(self, section: CollapsibleSection, field):
+    def _add_field_to_section(self, section: CollapsibleSection, field, readonly: bool = False):
         box = FieldBox(self)
 
         if field.field_type == "checkbox":
             cb = QCheckBox(field.label)
             cb.setChecked(bool(self.video.checklist_values.get(field.id, False)))
-            # Style the checkbox inside the box to be transparent-background
+            cb.setEnabled(not readonly)
             cb.setStyleSheet(
                 "QCheckBox { font-size:13px; color:#d0d0d0; background:transparent; }"
             )
@@ -312,6 +336,7 @@ class DetailView(QWidget):
                 w.setPlaceholderText(f"Add {field.label.lower()}…")
                 w.setMinimumHeight(72)
                 w.setMaximumHeight(150)
+                w.setReadOnly(readonly)
                 w.setStyleSheet(
                     "QTextEdit { background:transparent; border:none;"
                     "  border-radius:0; padding:2px 0; font-size:13px; color:#e0e0e0; }"
@@ -319,6 +344,7 @@ class DetailView(QWidget):
             else:
                 w = QLineEdit(val)
                 w.setPlaceholderText(f"Add {field.label.lower()}…")
+                w.setReadOnly(readonly)
                 w.setStyleSheet(
                     "QLineEdit { background:transparent; border:none;"
                     "  border-radius:0; padding:2px 0; font-size:13px; color:#e0e0e0; }"
@@ -332,6 +358,8 @@ class DetailView(QWidget):
 
     def _collect_values(self):
         if not self.video:
+            return
+        if self.video.stage == "completed":
             return
         self.video.title    = self._title_edit.text().strip() or self.video.title
         self.video.category = self._cat_combo[1].currentData()

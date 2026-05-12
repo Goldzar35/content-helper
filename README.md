@@ -1,14 +1,62 @@
 # Content Helper
 
-A Mac application for planning YouTube and Instagram video content.
+A native Mac app for planning and tracking YouTube / Instagram video content. Built with Python + PyQt6.
 
-## Features (planned)
+## What it does
 
-- Plan and schedule content ideas for YouTube and Instagram
-- Organize video concepts, scripts, and notes
-- Track content calendar and publishing status
-- Channel-specific planning views
+Videos move through a 5-stage production pipeline — Ideas → Planning → Filming → Editing → Posting — via a card-based Kanban UI. Each stage shows relevant checklist fields so you know exactly what needs to be done at each step. Once a video ships, fling it into Review (full edit) or Completed (read-only archive).
 
-## Getting Started
+## Stages
 
-*Setup instructions coming soon.*
+| Stage | Purpose |
+|---|---|
+| Ideas | Concept, audience, angle, inspiration |
+| Planning | Hook, script, thumbnail, description, tags |
+| Filming | Shot list, equipment, location, reminders |
+| Editing | Edit notes, music, graphics, color grade |
+| Posting | Final title/description/tags, thumbnail, schedule, CTA |
+| Review | All fields open and editable — final quality check |
+| Completed | All fields visible, read-only — finished archive |
+
+## Categories
+
+- **Arm Wrestling** — sport / competition content
+- **Game Dev** — devlog / game development content
+- **Misc** — everything else
+
+## Running
+
+```bash
+cd ~/content-helper
+pip install -r requirements.txt
+python3 main.py
+```
+
+Requires Python 3.10+ and PyQt6. Data is stored at `~/.content-helper/data.db` (SQLite).
+
+## Customizing checklist fields
+
+Click the ⚙ gear icon in the top bar to open Settings. You can add, rename, reorder, toggle active/inactive, and assign fields to specific stages. Changes take effect immediately on all videos.
+
+## Flinging cards
+
+Drag a card left or right past the threshold to advance or retreat its stage. A window shake + sound confirms the move.
+
+## File structure
+
+```
+content-helper/
+├── main.py                  # Entry point
+├── requirements.txt
+├── app/
+│   ├── card.py              # VideoCard widget + fling animation
+│   ├── database.py          # SQLite persistence
+│   ├── detail_view.py       # Per-video detail / checklist view
+│   ├── models.py            # Video + ChecklistField dataclasses
+│   ├── new_video_dialog.py  # "New Video" modal
+│   ├── settings_dialog.py   # Checklist field editor
+│   ├── sounds.py            # Fling sound (afplay)
+│   ├── stage_page.py        # Stage tab grid view
+│   ├── theme.py             # Colors, fonts, global QSS
+│   └── window.py            # MainWindow + tab bar + stack
+```

@@ -90,7 +90,7 @@ class VideoCard(QFrame):
         cat_color = CATEGORY_COLORS.get(cat_key, "#888")
         tag = QLabel(CATEGORY_DISPLAY.get(cat_key, cat_key))
         tag.setStyleSheet(
-            f"background:{cat_color}22; color:{cat_color}; border:1px solid {cat_color}55;"
+            f"background:{cat_color}; color:#ffffff; border:none;"
             f"border-radius:10px; padding:2px 8px; font-size:11px; font-weight:600;"
         )
         tag.setFixedHeight(20)

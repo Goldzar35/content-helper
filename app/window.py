@@ -15,7 +15,7 @@ from .theme import (
     ACCENT, ACCENT_TEXT, STAGE_COLORS, STAGE_KEYS, STAGES, GLOBAL_QSS,
 )
 
-_DETAIL_IDX = 5
+_DETAIL_IDX = 7
 
 
 class TabButton(QPushButton):
@@ -32,7 +32,7 @@ class TabButton(QPushButton):
 
     def _apply(self, active: bool):
         border_color = self.color if active else "transparent"
-        text_color   = TEXT_PRIMARY if active else TEXT_SECONDARY
+        text_color   = self.color if active else TEXT_SECONDARY
         weight       = "600" if active else "500"
         self.setStyleSheet(
             f"QPushButton {{"
@@ -73,6 +73,7 @@ class MainWindow(QMainWindow):
 
         self.setStyleSheet(GLOBAL_QSS)
         self._switch_stage(0)
+        self._update_tab_counts()
 
     # ── Top bar ───────────────────────────────────────────────────────────────
 

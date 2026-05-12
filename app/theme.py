@@ -1,5 +1,5 @@
-STAGES = ["Ideas", "Planning", "Filming", "Editing", "Posting"]
-STAGE_KEYS = ["ideas", "planning", "filming", "editing", "posting"]
+STAGES = ["Ideas", "Planning", "Filming", "Editing", "Posting", "Review", "Completed"]
+STAGE_KEYS = ["ideas", "planning", "filming", "editing", "posting", "review", "completed"]
 
 CATEGORIES = ["Arm Wrestling", "Game Dev", "Misc"]
 CATEGORY_KEYS = ["armwrestling", "gamedev", "misc"]
@@ -25,17 +25,19 @@ ACCENT      = "#d4a017"   # gold
 ACCENT_TEXT = "#1a0e00"   # near-black for text on gold buttons
 
 STAGE_COLORS = {
-    "ideas":    "#3b82f6",
-    "planning": "#f59e0b",
-    "filming":  "#ef4444",
-    "editing":  "#a855f7",
-    "posting":  "#10b981",
+    "ideas":     "#f5e6a3",
+    "planning":  "#e8c84a",
+    "filming":   "#d4a017",
+    "editing":   "#b8860b",
+    "posting":   "#9a6e08",
+    "review":    "#7a5206",
+    "completed": "#5c3d04",
 }
 
 CATEGORY_COLORS = {
-    "armwrestling": "#e05252",   # muted red — sport, grit
-    "gamedev":      "#7eb8f7",   # soft blue — techy, calm
-    "misc":         "#a8c5a0",   # sage green — neutral, varied
+    "armwrestling": "#e07a6a",
+    "gamedev":      "#6ac49a",
+    "misc":         "#6aaee0",
 }
 
 FONT_FAMILY = "-apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial"
