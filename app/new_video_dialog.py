@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt
 
 from .theme import (
     BG_ELEVATED, BORDER, TEXT_PRIMARY, TEXT_SECONDARY,
-    CATEGORY_KEYS, CATEGORY_DISPLAY, ACCENT,
+    CATEGORY_KEYS, CATEGORY_DISPLAY, ACCENT, ACCENT_TEXT,
 )
 
 
@@ -64,8 +64,8 @@ class NewVideoDialog(QDialog):
 
         create = QPushButton("Create →")
         create.setStyleSheet(
-            f"background:{ACCENT}; color:#fff; border:none; border-radius:6px;"
-            "padding:8px 20px; font-weight:600;"
+            f"background:{ACCENT}; color:{ACCENT_TEXT}; border:none; border-radius:6px;"
+            "padding:8px 20px; font-weight:700;"
         )
         create.setCursor(Qt.CursorShape.PointingHandCursor)
         create.clicked.connect(self._on_create)

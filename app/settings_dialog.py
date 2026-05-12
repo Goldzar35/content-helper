@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt
 
 from .theme import (
     BG_ELEVATED, BG_MAIN, BORDER, TEXT_PRIMARY, TEXT_SECONDARY,
-    TEXT_MUTED, ACCENT,
+    TEXT_MUTED, ACCENT, ACCENT_TEXT,
 )
 from .models import ChecklistField
 
@@ -170,8 +170,8 @@ class SettingsDialog(QDialog):
 
         save = QPushButton("Save Changes")
         save.setStyleSheet(
-            f"background:{ACCENT}; color:#fff; border:none; border-radius:6px;"
-            "padding:8px 20px; font-weight:600;"
+            f"background:{ACCENT}; color:{ACCENT_TEXT}; border:none; border-radius:6px;"
+            "padding:8px 20px; font-weight:700;"
         )
         save.setCursor(Qt.CursorShape.PointingHandCursor)
         save.clicked.connect(self._save)

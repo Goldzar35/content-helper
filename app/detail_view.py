@@ -8,11 +8,33 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from .theme import (
     BG_ELEVATED, BG_MAIN, BORDER, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED,
     CATEGORY_DISPLAY, CATEGORY_KEYS,
-    STAGE_COLORS, STAGE_KEYS, STAGES, ACCENT,
+    STAGE_COLORS, STAGE_KEYS, STAGES, ACCENT, ACCENT_TEXT,
 )
 
 
-# ── Collapsible section widget ────────────────────────────────────────────────
+# ── Field box ─────────────────────────────────────────────────────────────────
+
+class FieldBox(QFrame):
+    """Dark elevated card wrapping a single checklist field."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("FieldBox")
+        self.setStyleSheet(
+            "QFrame#FieldBox {"
+            "  background: #1c1c1c;"
+            "  border: 1px solid #282828;"
+            "  border-radius: 8px;"
+            "}"
+        )
+        self._lay = QVBoxLayout(self)
+        self._lay.setContentsMargins(14, 10, 14, 12)
+        self._lay.setSpacing(6)
+
+    def add(self, w: QWidget):
+        self._lay.addWidget(w)
+
+
+# ── Collapsible section ───────────────────────────────────────────────────────
 
 class CollapsibleSection(QWidget):
     def __init__(self, title: str, color: str, expanded: bool = True, parent=None):
@@ -24,54 +46,62 @@ class CollapsibleSection(QWidget):
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 4, 0, 0)
-        root.setSpacing(0)
+        root.setSpacing(10)
 
-        # Toggle header
-        self._btn = QPushButton()
-        self._btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._btn.clicked.connect(self._toggle)
-        root.addWidget(self._btn)
+        # Header row: colored dot + title + expand arrow
+        hdr = QWidget()
+        hdr.setStyleSheet("background:transparent;")
+        hdr_lay = QHBoxLayout(hdr)
+        hdr_lay.setContentsMargins(0, 0, 0, 0)
+        hdr_lay.setSpacing(8)
 
-        # Content area
+        self._dot = QLabel("●")
+        self._dot.setStyleSheet(
+            f"color:{color}; font-size:8px; background:transparent;"
+        )
+        self._dot.setFixedWidth(14)
+
+        self._title_lbl = QLabel(title.upper())
+        self._title_lbl.setStyleSheet(
+            f"color:{color}; font-size:10px; font-weight:700; "
+            "letter-spacing:1.2px; background:transparent;"
+        )
+
+        # Line separator
+        line = QFrame()
+        line.setFrameShape(QFrame.Shape.HLine)
+        line.setStyleSheet(f"background:{color}30; max-height:1px; border:none;")
+
+        self._toggle_btn = QPushButton("▾" if expanded else "▸")
+        self._toggle_btn.setFixedSize(22, 22)
+        self._toggle_btn.setStyleSheet(
+            f"background:transparent; border:none; color:{color}; font-size:12px;"
+        )
+        self._toggle_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._toggle_btn.clicked.connect(self._toggle)
+
+        hdr_lay.addWidget(self._dot)
+        hdr_lay.addWidget(self._title_lbl)
+        hdr_lay.addWidget(line, stretch=1)
+        hdr_lay.addWidget(self._toggle_btn)
+        root.addWidget(hdr)
+
+        # Content
         self._body = QWidget()
         self._body.setStyleSheet("background:transparent;")
         self._body_lay = QVBoxLayout(self._body)
-        self._body_lay.setContentsMargins(12, 10, 0, 8)
-        self._body_lay.setSpacing(14)
+        self._body_lay.setContentsMargins(0, 0, 0, 0)
+        self._body_lay.setSpacing(8)
         self._body.setVisible(expanded)
         root.addWidget(self._body)
-
-        self._update_btn()
 
     def _toggle(self):
         self._expanded = not self._expanded
         self._body.setVisible(self._expanded)
-        self._update_btn()
-
-    def _update_btn(self):
-        arrow = "▾" if self._expanded else "▸"
-        self._btn.setText(f"  {arrow}  {self._title}")
-        bg = f"{self._color}12" if self._expanded else "transparent"
-        self._btn.setStyleSheet(
-            f"QPushButton {{"
-            f"  background:{bg};"
-            f"  border:none;"
-            f"  border-left:2px solid {self._color};"
-            f"  color:{self._color};"
-            f"  font-size:11px; font-weight:700;"
-            f"  text-align:left;"
-            f"  letter-spacing:0.6px;"
-            f"  padding:7px 12px;"
-            f"  text-transform:uppercase;"
-            f"}}"
-            f"QPushButton:hover {{ background:{self._color}1e; }}"
-        )
+        self._toggle_btn.setText("▾" if self._expanded else "▸")
 
     def add_widget(self, w: QWidget):
         self._body_lay.addWidget(w)
-
-    def add_stretch(self):
-        self._body_lay.addStretch()
 
 
 # ── Main detail view ──────────────────────────────────────────────────────────
@@ -105,17 +135,17 @@ class DetailView(QWidget):
 
         self._back_btn = QPushButton("← Back")
         self._back_btn.setStyleSheet(
-            "background:transparent; border:none; color:#777; font-size:13px; padding:0; min-width:60px;"
+            "background:transparent; border:none; color:#666; font-size:13px; padding:0; min-width:60px;"
         )
         self._back_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._back_btn.clicked.connect(self._save_and_back)
 
         self._breadcrumb = QLabel()
-        self._breadcrumb.setStyleSheet("color:#555; font-size:12px; background:transparent;")
+        self._breadcrumb.setStyleSheet("color:#4a4a4a; font-size:12px; background:transparent;")
 
         self._del_btn = QPushButton("Delete")
         self._del_btn.setStyleSheet(
-            "background:transparent; border:none; color:#ef4444; font-size:13px; padding:0; min-width:50px;"
+            "background:transparent; border:none; color:#8a3a3a; font-size:13px; padding:0; min-width:50px;"
         )
         self._del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self._del_btn.clicked.connect(self._confirm_delete)
@@ -167,12 +197,15 @@ class DetailView(QWidget):
         self._title_edit = QLineEdit(v.title)
         self._title_edit.setPlaceholderText("Video title…")
         self._title_edit.setStyleSheet(
-            "font-size:22px; font-weight:700; border:none;"
-            "border-bottom:1px solid #2a2a2a; border-radius:0;"
-            "padding:6px 0; background:transparent;"
+            "QLineEdit {"
+            "  font-size:22px; font-weight:700; border:none;"
+            "  border-style:solid; border-width:0 0 1px 0;"
+            "  border-color:transparent transparent #252525 transparent;"
+            "  border-radius:0; padding:6px 0; background:transparent;"
+            "}"
         )
         lay.addWidget(self._title_edit)
-        lay.addSpacing(14)
+        lay.addSpacing(16)
 
         # ── Category + Stage ──────────────────────────────────────────────
         meta = QWidget()
@@ -181,58 +214,51 @@ class DetailView(QWidget):
         m.setContentsMargins(0, 0, 0, 0)
         m.setSpacing(20)
 
-        self._cat_combo = self._make_combo(
+        self._cat_combo   = self._make_labeled_combo(
+            "Category",
             [(CATEGORY_DISPLAY[k], k) for k in CATEGORY_KEYS],
             CATEGORY_KEYS.index(v.category) if v.category in CATEGORY_KEYS else 0,
-            "Category",
         )
-        self._stage_combo = self._make_combo(
+        self._stage_combo = self._make_labeled_combo(
+            "Stage",
             [(STAGES[i], k) for i, k in enumerate(STAGE_KEYS)],
             stage_idx,
-            "Stage",
         )
-
         m.addWidget(self._cat_combo[0])
         m.addWidget(self._stage_combo[0])
         m.addStretch()
         lay.addWidget(meta)
-        lay.addSpacing(28)
+        lay.addSpacing(32)
 
-        # ── Current stage section ─────────────────────────────────────────
+        # ── Current stage fields ──────────────────────────────────────────
         current_fields = self.db.get_fields_for_stage(v.stage)
-        current_sec = CollapsibleSection(
-            f"{STAGES[stage_idx]}",
-            stage_col,
-            expanded=True,
-        )
+        current_sec = CollapsibleSection(STAGES[stage_idx], stage_col, expanded=True)
         if current_fields:
             for field in current_fields:
                 self._add_field_to_section(current_sec, field)
         else:
-            empty = QLabel("No fields configured for this stage.\nAdd some in Settings ⚙")
+            empty = QLabel("No fields for this stage — add some in Settings ⚙")
             empty.setStyleSheet(f"color:{TEXT_MUTED}; font-size:13px; background:transparent;")
             current_sec.add_widget(empty)
         lay.addWidget(current_sec)
 
-        # ── Review sections (previous stages, collapsed) ──────────────────
+        # ── Review: previous stages (collapsed) ──────────────────────────
         if stage_idx > 0:
-            lay.addSpacing(24)
+            lay.addSpacing(28)
             review_lbl = QLabel("Review")
             review_lbl.setStyleSheet(
-                f"font-size:10px; font-weight:700; color:{TEXT_MUTED}; letter-spacing:1.2px;"
-                "text-transform:uppercase; background:transparent;"
+                f"font-size:10px; font-weight:700; color:{TEXT_MUTED};"
+                "letter-spacing:1.4px; text-transform:uppercase; background:transparent;"
             )
             lay.addWidget(review_lbl)
-            lay.addSpacing(6)
+            lay.addSpacing(8)
 
-            # Most recent previous stage first
             for i in range(stage_idx - 1, -1, -1):
                 prev_key    = STAGE_KEYS[i]
-                prev_color  = STAGE_COLORS.get(prev_key, "#555")
                 prev_fields = self.db.get_fields_for_stage(prev_key)
                 if not prev_fields:
                     continue
-                sec = CollapsibleSection(STAGES[i], prev_color, expanded=False)
+                sec = CollapsibleSection(STAGES[i], STAGE_COLORS.get(prev_key, "#555"), expanded=False)
                 for field in prev_fields:
                     self._add_field_to_section(sec, field)
                 lay.addWidget(sec)
@@ -240,60 +266,67 @@ class DetailView(QWidget):
 
         lay.addStretch()
 
-    def _make_combo(self, items: list, current_idx: int, label_text: str):
+    def _make_labeled_combo(self, label_text: str, items: list, current_idx: int):
         """Returns (wrapper QWidget, QComboBox)."""
         wrap = QWidget()
         wrap.setStyleSheet("background:transparent;")
         wl = QVBoxLayout(wrap)
         wl.setContentsMargins(0, 0, 0, 0)
         wl.setSpacing(4)
-
         lbl = QLabel(label_text)
         lbl.setStyleSheet(
-            f"font-size:10px; font-weight:600; color:{TEXT_MUTED}; "
+            f"font-size:10px; font-weight:600; color:{TEXT_MUTED};"
             "text-transform:uppercase; letter-spacing:0.8px; background:transparent;"
         )
         combo = QComboBox()
         for text, data in items:
             combo.addItem(text, data)
         combo.setCurrentIndex(current_idx)
-
         wl.addWidget(lbl)
         wl.addWidget(combo)
         return wrap, combo
 
     def _add_field_to_section(self, section: CollapsibleSection, field):
-        container = QWidget()
-        container.setStyleSheet("background:transparent;")
-        lay = QVBoxLayout(container)
-        lay.setContentsMargins(0, 0, 0, 0)
-        lay.setSpacing(5)
+        box = FieldBox(self)
 
         if field.field_type == "checkbox":
             cb = QCheckBox(field.label)
             cb.setChecked(bool(self.video.checklist_values.get(field.id, False)))
-            lay.addWidget(cb)
+            # Style the checkbox inside the box to be transparent-background
+            cb.setStyleSheet(
+                "QCheckBox { font-size:13px; color:#d0d0d0; background:transparent; }"
+            )
+            box.add(cb)
             self._field_widgets[field.id] = cb
         else:
-            lbl = QLabel(field.label)
+            lbl = QLabel(field.label.upper())
             lbl.setStyleSheet(
-                f"font-size:11px; color:{TEXT_SECONDARY}; background:transparent;"
+                "font-size:9px; font-weight:700; color:#4a4a4a; letter-spacing:1px; background:transparent;"
             )
-            lay.addWidget(lbl)
+            box.add(lbl)
+
             val = str(self.video.checklist_values.get(field.id, ""))
             if field.field_type == "textarea":
                 w = QTextEdit()
                 w.setPlainText(val)
-                w.setPlaceholderText(f"{field.label}…")
-                w.setMinimumHeight(78)
-                w.setMaximumHeight(160)
+                w.setPlaceholderText(f"Add {field.label.lower()}…")
+                w.setMinimumHeight(72)
+                w.setMaximumHeight(150)
+                w.setStyleSheet(
+                    "QTextEdit { background:transparent; border:none;"
+                    "  border-radius:0; padding:2px 0; font-size:13px; color:#e0e0e0; }"
+                )
             else:
                 w = QLineEdit(val)
-                w.setPlaceholderText(f"{field.label}…")
-            lay.addWidget(w)
+                w.setPlaceholderText(f"Add {field.label.lower()}…")
+                w.setStyleSheet(
+                    "QLineEdit { background:transparent; border:none;"
+                    "  border-radius:0; padding:2px 0; font-size:13px; color:#e0e0e0; }"
+                )
+            box.add(w)
             self._field_widgets[field.id] = w
 
-        section.add_widget(container)
+        section.add_widget(box)
 
     # ── Save / Delete ─────────────────────────────────────────────────────────
 

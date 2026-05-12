@@ -21,7 +21,8 @@ TEXT_PRIMARY   = "#f0f0f0"
 TEXT_SECONDARY = "#888888"
 TEXT_MUTED     = "#484848"
 
-ACCENT = "#0d99ff"
+ACCENT      = "#d4a017"   # gold
+ACCENT_TEXT = "#1a0e00"   # near-black for text on gold buttons
 
 STAGE_COLORS = {
     "ideas":    "#3b82f6",
@@ -32,9 +33,9 @@ STAGE_COLORS = {
 }
 
 CATEGORY_COLORS = {
-    "armwrestling": "#f43f5e",   # rose — intense, sport
-    "gamedev":      "#60a5fa",   # sky blue — techy, creative
-    "misc":         "#fbbf24",   # amber — warm, versatile
+    "armwrestling": "#e05252",   # muted red — sport, grit
+    "gamedev":      "#7eb8f7",   # soft blue — techy, calm
+    "misc":         "#a8c5a0",   # sage green — neutral, varied
 }
 
 FONT_FAMILY = "-apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial"

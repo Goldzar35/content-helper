@@ -1,5 +1,7 @@
 import time
 
+from .sounds import play_fling
+
 from PyQt6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel, QWidget
 from PyQt6.QtCore import (
     Qt, QPoint, QPropertyAnimation, QEasingCurve, pyqtSignal,
@@ -257,6 +259,7 @@ class VideoCard(QFrame):
         anim.start(QAbstractAnimation.DeletionPolicy.KeepWhenStopped)
 
     def _on_fling_done(self, forward: bool):
+        play_fling()
         self._cleanup_ghost()
         if forward:
             self.advance_sig.emit(self.video.id)

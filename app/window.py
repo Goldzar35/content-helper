@@ -12,7 +12,7 @@ from .new_video_dialog import NewVideoDialog
 from .settings_dialog import SettingsDialog
 from .theme import (
     BG_MAIN, BG_ELEVATED, BORDER, TEXT_PRIMARY, TEXT_SECONDARY,
-    ACCENT, STAGE_COLORS, STAGE_KEYS, STAGES, GLOBAL_QSS,
+    ACCENT, ACCENT_TEXT, STAGE_COLORS, STAGE_KEYS, STAGES, GLOBAL_QSS,
 )
 
 _DETAIL_IDX = 5
@@ -113,8 +113,8 @@ class MainWindow(QMainWindow):
 
         new_btn = QPushButton("  +  New Video")
         new_btn.setStyleSheet(
-            f"background:{ACCENT}; color:#fff; border:none; border-radius:7px;"
-            "font-size:13px; font-weight:600; padding:7px 16px; margin-left:8px;"
+            f"background:{ACCENT}; color:{ACCENT_TEXT}; border:none; border-radius:7px;"
+            "font-size:13px; font-weight:700; padding:7px 16px; margin-left:8px;"
         )
         new_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         new_btn.clicked.connect(self._new_video)
